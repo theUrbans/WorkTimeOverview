@@ -14,6 +14,8 @@ async function main() {
   const daily = await service.getTodayWorktime(7);
 
   console.log(daily);
+
+  await service.getEmployeeData(7);
 }
 
 await main();

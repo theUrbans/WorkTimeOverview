@@ -48,6 +48,23 @@ class TimeService {
     const hours = Math.floor(minutes / 60);
     return `${hours.toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
   }
+
+  public async getEmployeeData(employeeId: number) {
+    // get data from employees table where area = employeeId
+    employeeId
+    const data = await this.db.query(`SELECT * FROM employees WHERE area = '7'`);
+    // holiday key: HD
+    // working days key: WorkingDays
+    // working hours key: WeekHours
+    // case HolidayTypes.PlusHours: return 'P';
+    // case HolidayTypes.Vacation: return 'V'; done
+    // case HolidayTypes.OldVacation: return 'O';
+    // case HolidayTypes.Sick: return 'K';
+    // case HolidayTypes.SpecialLeave: return 'S';
+    // case HolidayTypes.Excused: return 'E';
+    // case HolidayTypes.Correction: return 'C';
+    console.log({ data });
+  }
 }
 
 export default TimeService;
