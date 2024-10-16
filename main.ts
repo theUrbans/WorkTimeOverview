@@ -1,21 +1,13 @@
-import Database from "./database.ts";
-import TimeService from "./Service/TimeService.ts";
+/// <reference no-default-lib="true" />
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
+/// <reference lib="dom.asynciterable" />
+/// <reference lib="deno.ns" />
 
-async function main() {
-  const db = new Database({
-    hostname: "192.168.1.4",
-    port: 5432,
-    database: "docstool",
-    user: "postgres",
-    password: "postgres",
-  });
+import "$std/dotenv/load.ts";
 
-  const service = new TimeService(db);
-  const daily = await service.getTodayWorktime(7);
+import { start } from "$fresh/server.ts";
+import manifest from "./fresh.gen.ts";
+import config from "./fresh.config.ts";
 
-  console.log(daily);
-
-  await service.getEmployeeData(7);
-}
-
-await main();
+await start(manifest, config);

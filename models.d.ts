@@ -5,3 +5,10 @@ declare type TimeEntry = {
   logout: string;
   log_date: string;
 };
+
+declare type DataEntry = {
+  id: number;
+  area: string;
+  key: string;
+  value: string;
+}
