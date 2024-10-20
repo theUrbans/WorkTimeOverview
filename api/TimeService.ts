@@ -139,10 +139,12 @@ class TimeService {
 
   public async getWeeklyTime(
     employeeId: number,
+    week: number,
     weekHours: number,
   ): Promise<WeeklyResponse> {
     const rows = await this.db.query<TimeEntry>(
-      `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = EXTRACT(WEEK FROM CURRENT_DATE) AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
+      // `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = EXTRACT(WEEK FROM CURRENT_DATE) AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
+      `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = ${week} AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
     );
 
     const weeklyTime = rows.reduce((acc, row) => {
@@ -207,9 +209,12 @@ class TimeService {
 
   public async getMonthlyWorkTime(
     employeeId: number,
+    month: number,
+    year: number,
   ): Promise<MonthlyWorkTimeResponse> {
     const rows = await this.db.query<TimeEntry>(
-      `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(MONTH FROM log_date) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
+      // `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(MONTH FROM log_date) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
+      `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(MONTH FROM log_date) = ${month} AND EXTRACT(YEAR FROM log_date) = ${year}`,
     );
 
     const timeMap: MonthlyWorkTimeResponse = {};

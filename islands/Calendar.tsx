@@ -2,43 +2,58 @@ import { type Signal, useSignal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import type { HandlerResponse } from "../routes/today/[id].tsx";
 import TodayTimer from "./TodayTimer.tsx";
-import type { MonthlyWorkTimeResponse } from "../api/TimeService.ts";
+
+type DailyWorkTime = {
+  day: Date;
+  time: string;
+  pause: string;
+  logs: {
+    in: string;
+    out: string;
+  }[];
+};
 
 interface CalendarProps {
-  year: Signal<number>;
-  month: Signal<number>;
+  data: Signal<HandlerResponse>;
   employeeId: number;
 }
 
-async function getData(id: number): Promise<HandlerResponse> {
-  const data = await fetch(`/api/${id}`);
+async function getData(
+  id: number,
+  month: number,
+  year: number,
+): Promise<HandlerResponse> {
+  const data = await fetch(`/api/${id}?month=${month}&year=${year}`);
   return await data.json();
 }
 
 export default function Calendar(props: CalendarProps) {
-  const [data, setData] = useState<HandlerResponse | null>(null);
-  const todayTime = useSignal(data?.today.time || "00:00:00");
-  const weekTime = useSignal(data?.weekly.time || "00:00:00");
+  const [data, setData] = useState<HandlerResponse | null>(props.data.value);
+
+  const month = useSignal(new Date().getMonth());
+  const year = useSignal(new Date().getFullYear());
+
+  const todayTime = useSignal(data?.data?.today.time || "00:00:00");
+  const weekTime = useSignal(data?.data?.weekly.time || "00:00:00");
 
   useEffect(() => {
     async function fetchData() {
-      const { today, weekly, monthly } = await getData(props.employeeId);
-      setData({ today, weekly, monthly });
-      todayTime.value = today.time;
-      weekTime.value = weekly.time;
+      const { data } = await getData(props.employeeId, month.value, year.value);
+      setData({ data });
+      todayTime.value = data.today.time;
+      weekTime.value = data.weekly.time;
     }
 
     fetchData();
-  }, [props.employeeId, props.year.value, props.month.value]);
+  }, [year.value, month.value]);
 
   if (!data) {
     return <div>Loading...</div>;
   }
 
-  const daysInMonth = new Date(props.year.value, props.month.value + 1, 0)
+  const daysInMonth = new Date(year.value, month.value + 1, 0)
     .getDate();
-  const firstDayOfMonth =
-    (new Date(props.year.value, props.month.value, 1).getDay() + 6) %
+  const firstDayOfMonth = (new Date(year.value, month.value, 1).getDay() + 6) %
     7;
   const days = [];
 
@@ -53,27 +68,38 @@ export default function Calendar(props: CalendarProps) {
   function isToday(day: number): boolean {
     const today = new Date();
     return (
-      today.getFullYear() === props.year.value &&
-      today.getMonth() === props.month.value &&
+      today.getFullYear() === year.value &&
+      today.getMonth() === month.value &&
       today.getDate() === day
     );
   }
 
-  function getEntry(day: number): MonthlyWorkTimeResponse {
-    const isoDate = new Date(props.year.value, props.month.value, day)
+  function getEntry(day: number): DailyWorkTime | undefined {
+    const isoDate = new Date(year.value, month.value, day)
       .toISOString();
-    return data?.monthly[isoDate];
+    const data = props.data.value.data.monthly[isoDate];
+    return data;
+  }
+
+  function getColor(day: number | string | undefined): string {
+    if (isToday(Number(day))) {
+      return "lightblue";
+    } else if (day) {
+      return "darkgray";
+    } else {
+      return "";
+    }
   }
 
   return (
     <div class="h-full flex flex-col">
       <div className="flex bg-slate-400 p-2 gap-2 box-border justify-center">
         <span>
-          <TodayTimer time={weekTime} inProgess={data.today.inProgress} />
+          <TodayTimer time={weekTime} inProgess={data.data.today.inProgress} />
         </span>
         <button
           onClick={() => {
-            props.month.value = (props.month.value - 1 + 12) % 12;
+            month.value = (month.value - 1 + 12) % 12;
           }}
         >
           {"<"}
@@ -82,18 +108,16 @@ export default function Calendar(props: CalendarProps) {
           type="date"
           name=""
           id=""
-          value={`${props.year.value}-${
-            String(props.month.value + 1).padStart(2, "0")
-          }-01`}
+          value={`${year.value}-${String(month.value + 1).padStart(2, "0")}-01`}
           onChange={(e) => {
             const date = new Date(e.currentTarget.value);
-            props.year.value = date.getFullYear();
-            props.month.value = date.getMonth();
+            year.value = date.getFullYear();
+            month.value = date.getMonth();
           }}
         />
         <button
           onClick={() => {
-            props.month.value = (props.month.value + 1) % 12;
+            month.value = (month.value + 1) % 12;
           }}
         >
           {">"}
@@ -125,15 +149,10 @@ export default function Calendar(props: CalendarProps) {
               ? "p-2 flex flex-col justify-between rounded-md border-2 border-solid"
               : ""}
             style={{
-              backgroundColor: isToday(Number(day))
-                ? "lightblue"
-                : day
-                ? "darkgray"
-                : "",
+              backgroundColor: getColor(day),
             }}
           >
             <div class="flex justify-between">
-              {/* if day else empty span */}
               {day
                 ? (
                   <span class="font-bold">
@@ -142,20 +161,21 @@ export default function Calendar(props: CalendarProps) {
                 )
                 : <span></span>}
               <span>
-                {isToday(Number(day)) && data.today.inProgress
+                {isToday(Number(day)) && data.data.today.inProgress
                   ? (
                     <TodayTimer
                       time={todayTime}
-                      inProgess={data.today.inProgress}
+                      inProgess={data.data.today.inProgress}
                     />
                   )
                   : getEntry(Number(day))?.time}
+                {JSON.stringify(getEntry(Number(day)))}
               </span>
             </div>
             <div>
-              {data
+              {data.data
                 .monthly[
-                  new Date(props.year.value, props.month.value, Number(day))
+                  new Date(year.value, month.value, Number(day))
                     .toISOString()
                 ]?.logs.map((log: { in: string; out: string }) => (
                   <div>
