@@ -4,24 +4,37 @@
 
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
-import * as $api_id_ from "./routes/api/data/[employee].ts";
+import * as $api_employee_daily_dayOfYear_ from "./routes/api/[employee]/daily/[dayOfYear].ts";
+import * as $api_employee_data_index from "./routes/api/[employee]/data/index.ts";
+import * as $api_employee_monthly_month_ from "./routes/api/[employee]/monthly/[month].ts";
+import * as $api_employee_sse_index from "./routes/api/[employee]/sse/index.ts";
+import * as $api_employee_weekly_week_ from "./routes/api/[employee]/weekly/[week].ts";
 import * as $index from "./routes/index.tsx";
-import * as $today_id_ from "./routes/today/[id].tsx";
+import * as $time_id_ from "./routes/time/[id].tsx";
+import * as $time_index from "./routes/time/index.tsx";
 import * as $Calendar from "./islands/Calendar.tsx";
-import * as $TodayTimer from "./islands/TodayTimer.tsx";
+import * as $TimeOverview from "./islands/TimeOverview.tsx";
+import * as $Timer from "./islands/Timer.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
 const manifest = {
   routes: {
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
-    "./routes/api/[id].ts": $api_id_,
+    "./routes/api/[employee]/daily/[dayOfYear].ts":
+      $api_employee_daily_dayOfYear_,
+    "./routes/api/[employee]/data/index.ts": $api_employee_data_index,
+    "./routes/api/[employee]/monthly/[month].ts": $api_employee_monthly_month_,
+    "./routes/api/[employee]/sse/index.ts": $api_employee_sse_index,
+    "./routes/api/[employee]/weekly/[week].ts": $api_employee_weekly_week_,
     "./routes/index.tsx": $index,
-    "./routes/today/[id].tsx": $today_id_,
+    "./routes/time/[id].tsx": $time_id_,
+    "./routes/time/index.tsx": $time_index,
   },
   islands: {
     "./islands/Calendar.tsx": $Calendar,
-    "./islands/TodayTimer.tsx": $TodayTimer,
+    "./islands/TimeOverview.tsx": $TimeOverview,
+    "./islands/Timer.tsx": $Timer,
   },
   baseUrl: import.meta.url,
 } satisfies Manifest;

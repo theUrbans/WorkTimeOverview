@@ -1,4 +1,7 @@
+import { weekOfYear } from "@std/datetime/week-of-year";
 import type Database from "../database.ts";
+import { dailyWorkTimeFromWeekly } from "../utils/timeHelper.ts";
+import { dayOfYear } from "@std/datetime/day-of-year";
 
 interface ITimeService {
   getDailyTime(): Promise<object[]>;
@@ -36,6 +39,11 @@ export type MonthlyWorkTimeResponse = {
   };
 };
 
+export type TimeDoneResponse = {
+  daily: { done: boolean; left: string };
+  weekly: { done: boolean; left: string };
+};
+
 class TimeService {
   private db: Database;
 
@@ -43,9 +51,12 @@ class TimeService {
     this.db = db;
   }
 
-  public async getTodayWorktime(employeeId: number): Promise<TodayResponse> {
+  public async getTodayWorktime(
+    employeeId: number,
+    dayOfYear: number,
+  ): Promise<TodayResponse> {
     const rows = await this.db.query<TimeEntry>(
-      `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND log_date = CURRENT_DATE`,
+      `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(DOY FROM log_date) = ${dayOfYear}`,
     );
 
     const dailyTime = rows.reduce((acc, row) => {
@@ -143,7 +154,6 @@ class TimeService {
     weekHours: number,
   ): Promise<WeeklyResponse> {
     const rows = await this.db.query<TimeEntry>(
-      // `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = EXTRACT(WEEK FROM CURRENT_DATE) AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
       `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = ${week} AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
     );
 
@@ -213,7 +223,6 @@ class TimeService {
     year: number,
   ): Promise<MonthlyWorkTimeResponse> {
     const rows = await this.db.query<TimeEntry>(
-      // `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(MONTH FROM log_date) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
       `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(MONTH FROM log_date) = ${month} AND EXTRACT(YEAR FROM log_date) = ${year}`,
     );
 
@@ -245,7 +254,6 @@ class TimeService {
     }
 
     Object.values(timeMap).forEach((value) => {
-      // Calculate pause time
       const logs = value.logs;
       let pause = 0;
       for (const [i, log] of logs.entries()) {
@@ -259,6 +267,64 @@ class TimeService {
     });
 
     return timeMap;
+  }
+
+  public async checkTimeDone(
+    employeeId: number,
+    date: Date,
+  ): Promise<TimeDoneResponse> {
+    const week = weekOfYear(date);
+    const doy = dayOfYear(date);
+
+    const [weeklyHours, workingDays] = await Promise.all([
+      this.db.query<DataEntry>(
+        `SELECT * FROM employees WHERE area = '${employeeId}' and key = 'WeekHours'`,
+      ),
+      this.db.query<DataEntry>(
+        `SELECT * FROM employees WHERE area = '${employeeId}' and key = 'WorkingDays'`,
+      ),
+    ]);
+
+    const dailyHours = dailyWorkTimeFromWeekly(
+      Number(weeklyHours[0].value),
+      Number(workingDays[0].value),
+    );
+
+    const [dailyTime, weeklyTime] = await Promise.all([
+      this.db.query<TimeEntry>(
+        `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(DOY FROM log_date) = ${doy} order by id`,
+      ),
+      this.db.query<TimeEntry>(
+        `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = ${week} order by id`,
+      ),
+    ]);
+
+    const dailyTimeSum = dailyTime.reduce((acc, row) => {
+      const timeIn = this.timeToDate(row.login);
+      const timeOut = row.logout ? this.timeToDate(row.logout) : new Date();
+      return acc + this.calculateTimeDifference(timeIn, timeOut);
+    }, 0);
+
+    const weeklyTimeSum = weeklyTime.reduce((acc, row) => {
+      const timeIn = this.timeToDate(row.login);
+      const timeOut = row.logout ? this.timeToDate(row.logout) : new Date();
+      return acc + this.calculateTimeDifference(timeIn, timeOut);
+    }, 0);
+
+    return {
+      daily: {
+        done: dailyTimeSum >= Number(dailyHours),
+        left: this.millisecondsToTime(Number(dailyHours) - dailyTimeSum),
+      },
+      weekly: {
+        done: weeklyTimeSum >=
+          this.hoursToMilliseconds(Number(weeklyHours[0].value)),
+        left: this.millisecondsToTime(
+          this.hoursToMilliseconds(Number(weeklyHours[0].value)) -
+            weeklyTimeSum,
+        ),
+      },
+    };
   }
 }
 

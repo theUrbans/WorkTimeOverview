@@ -11,4 +11,4 @@ declare type DataEntry = {
   area: string;
   key: string;
   value: string;
-}
+};

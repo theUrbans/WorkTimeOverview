@@ -1,191 +1,177 @@
-import { type Signal, useSignal } from "@preact/signals";
-import { useEffect, useState } from "preact/hooks";
-import type { HandlerResponse } from "../routes/today/[id].tsx";
-import TodayTimer from "./TodayTimer.tsx";
-
-type DailyWorkTime = {
-  day: Date;
-  time: string;
-  pause: string;
-  logs: {
-    in: string;
-    out: string;
-  }[];
-};
+import { useState } from "preact/hooks";
 
 interface CalendarProps {
-  data: Signal<HandlerResponse>;
-  employeeId: number;
+  startOfWeek?: number; // 1 (Monday) to 7 (Sunday)
+  daysToShow?: number[]; // Array of day numbers (1-7)
+  dayNames?: string[]; // Custom names for the days
+  renderDay?: (date: Date) => preact.JSX.Element;
+  renderWeek?: (weekNumber: number) => preact.JSX.Element;
+  onChange?: (date: Date) => void;
+  onDayClick?: (date: Date) => void;
 }
 
-async function getData(
-  id: number,
-  month: number,
-  year: number,
-): Promise<HandlerResponse> {
-  const data = await fetch(`/api/${id}?month=${month}&year=${year}`);
-  return await data.json();
-}
+const CalendarComponent: preact.FunctionalComponent<CalendarProps> = ({
+  startOfWeek = 7,
+  daysToShow = [1, 2, 3, 4, 5, 6, 7],
+  dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  renderDay,
+  renderWeek,
+  onChange,
+  onDayClick,
+}) => {
+  const dayIndexes = daysToShow.map((day) => day % 7);
 
-export default function Calendar(props: CalendarProps) {
-  const [data, setData] = useState<HandlerResponse | null>(props.data.value);
+  dayNames = dayNames.filter((_, index) =>
+    dayIndexes.includes((index + 1) % 7)
+  );
 
-  const month = useSignal(new Date().getMonth());
-  const year = useSignal(new Date().getFullYear());
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  const todayTime = useSignal(data?.data?.today.time || "00:00:00");
-  const weekTime = useSignal(data?.data?.weekly.time || "00:00:00");
+  const formatDateForInput = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = ("0" + (date.getMonth() + 1)).slice(-2);
+    return `${year}-${month}`;
+  };
 
-  useEffect(() => {
-    async function fetchData() {
-      const { data } = await getData(props.employeeId, month.value, year.value);
-      setData({ data });
-      todayTime.value = data.today.time;
-      weekTime.value = data.weekly.time;
+  const getWeekNumber = (date: Date): number => {
+    const target = new Date(date.valueOf());
+    const dayNr = (date.getDay() + 6) % 7;
+    target.setDate(target.getDate() - dayNr + 3);
+    const firstThursday = target.valueOf();
+    target.setMonth(0, 1);
+    if (target.getDay() !== 4) {
+      target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
     }
+    const weekNumber = 1 +
+      Math.ceil((firstThursday - target.valueOf()) / 604800000);
+    return weekNumber;
+  };
 
-    fetchData();
-  }, [year.value, month.value]);
-
-  if (!data) {
-    return <div>Loading...</div>;
-  }
-
-  const daysInMonth = new Date(year.value, month.value + 1, 0)
-    .getDate();
-  const firstDayOfMonth = (new Date(year.value, month.value, 1).getDay() + 6) %
-    7;
-  const days = [];
-
-  for (let i = 0; i < firstDayOfMonth; i++) {
-    days.push("");
-  }
-
-  for (let i = 1; i <= daysInMonth; i++) {
-    days.push(i);
-  }
-
-  function isToday(day: number): boolean {
-    const today = new Date();
-    return (
-      today.getFullYear() === year.value &&
-      today.getMonth() === month.value &&
-      today.getDate() === day
+  const handlePrevMonth = () => {
+    const prevMonthDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - 1,
+      1,
     );
-  }
-
-  function getEntry(day: number): DailyWorkTime | undefined {
-    const isoDate = new Date(year.value, month.value, day)
-      .toISOString();
-    const data = props.data.value.data.monthly[isoDate];
-    return data;
-  }
-
-  function getColor(day: number | string | undefined): string {
-    if (isToday(Number(day))) {
-      return "lightblue";
-    } else if (day) {
-      return "darkgray";
-    } else {
-      return "";
+    setCurrentDate(prevMonthDate);
+    if (onChange) {
+      onChange(prevMonthDate);
     }
-  }
+  };
 
-  return (
-    <div class="h-full flex flex-col">
-      <div className="flex bg-slate-400 p-2 gap-2 box-border justify-center">
-        <span>
-          <TodayTimer time={weekTime} inProgess={data.data.today.inProgress} />
-        </span>
-        <button
-          onClick={() => {
-            month.value = (month.value - 1 + 12) % 12;
-          }}
-        >
-          {"<"}
-        </button>
-        <input
-          type="date"
-          name=""
-          id=""
-          value={`${year.value}-${String(month.value + 1).padStart(2, "0")}-01`}
-          onChange={(e) => {
-            const date = new Date(e.currentTarget.value);
-            year.value = date.getFullYear();
-            month.value = date.getMonth();
-          }}
-        />
-        <button
-          onClick={() => {
-            month.value = (month.value + 1) % 12;
-          }}
-        >
-          {">"}
-        </button>
-      </div>
-      <div class="grid grid-cols-7 gap-2 bg-slate-600 h-full p-5 box-border" // style={{
-        //   display: "grid",
-        //   gridTemplateColumns: "repeat(7, 1fr)",
-        //   gridTemplateRows: "max-content repeat(auto-fill, 1fr)",
-        //   gap: "5px",
-        //   backgroundColor: "lightgray",
-        //   padding: "5px",
-        //   height: "100%",
-        //   boxSizing: "border-box",
-        // }}
-      >
-        {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
+  const handleNextMonth = () => {
+    const nextMonthDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      1,
+    );
+    setCurrentDate(nextMonthDate);
+    if (onChange) {
+      onChange(nextMonthDate);
+    }
+  };
+
+  const handleDateChange = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    const [year, month] = target.value.split("-").map(Number);
+    const newDate = new Date(year, month - 1, 1);
+    setCurrentDate(newDate);
+    if (onChange) {
+      onChange(newDate);
+    }
+  };
+
+  const generateCalendar = () => {
+    const weeks = [];
+    const firstDayOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1,
+    );
+    const startDayOfWeek = startOfWeek % 7;
+    const firstWeekday = firstDayOfMonth.getDay();
+    const dayOffset = (firstWeekday - startDayOfWeek + 7) % 7;
+
+    const startDate = new Date(firstDayOfMonth);
+    startDate.setDate(startDate.getDate() - dayOffset);
+
+    const lastDayOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      0,
+    );
+    const lastWeekday = lastDayOfMonth.getDay();
+    const endDayOffset =
+      (startDayOfWeek + dayIndexes.length - 1 - lastWeekday + 7) % 7;
+    const endDate = new Date(lastDayOfMonth);
+    endDate.setDate(endDate.getDate() + endDayOffset);
+
+    const date = new Date(startDate);
+
+    while (date <= endDate) {
+      const weekNumber = getWeekNumber(date);
+      const weekDates = [];
+      for (let i = 0; i < 7; i++) {
+        if (dayIndexes.includes(date.getDay())) {
+          weekDates.push(new Date(date));
+        }
+        date.setDate(date.getDate() + 1);
+      }
+      weeks.push({
+        weekNumber,
+        dates: weekDates,
+      });
+    }
+
+    return weeks.map((week) => (
+      <>
+        <div>
+          {renderWeek ? renderWeek(week.weekNumber) : week.weekNumber}
+        </div>
+        {week.dates.map((date) => (
           <div
-            key={day}
-            style={{ fontWeight: "bold", height: "0px" }}
-          >
-            {day}
-          </div>
-        ))}
-        {days.map((day, index) => (
-          <div
-            key={index}
-            className={day !== ""
-              ? "p-2 flex flex-col justify-between rounded-md border-2 border-solid"
-              : ""}
+            onClick={() => onDayClick?.(date)}
             style={{
-              backgroundColor: getColor(day),
+              cursor: onDayClick ? "pointer" : "default",
             }}
           >
-            <div class="flex justify-between">
-              {day
-                ? (
-                  <span class="font-bold">
-                    {day}
-                  </span>
-                )
-                : <span></span>}
-              <span>
-                {isToday(Number(day)) && data.data.today.inProgress
-                  ? (
-                    <TodayTimer
-                      time={todayTime}
-                      inProgess={data.data.today.inProgress}
-                    />
-                  )
-                  : getEntry(Number(day))?.time}
-                {JSON.stringify(getEntry(Number(day)))}
-              </span>
-            </div>
-            <div>
-              {data.data
-                .monthly[
-                  new Date(year.value, month.value, Number(day))
-                    .toISOString()
-                ]?.logs.map((log: { in: string; out: string }) => (
-                  <div>
-                    {log.in} - {log.out}
-                  </div>
-                ))}
-            </div>
+            {renderDay ? renderDay(date) : date.getDate()}
           </div>
         ))}
+      </>
+    ));
+  };
+
+  return (
+    <div class="calendar-component">
+      <div class="flex items-center justify-between mb-4">
+        <button onClick={handlePrevMonth} class="bg-gray-200 p-2 rounded">
+          Prev
+        </button>
+        <input
+          type="month"
+          value={formatDateForInput(currentDate)}
+          onChange={handleDateChange}
+          class="border p-2 rounded"
+        />
+        <button onClick={handleNextMonth} class="bg-gray-200 p-2 rounded">
+          Next
+        </button>
+      </div>
+      <div
+        class={`grid gap-2`}
+        style={{
+          gridTemplateColumns: `repeat(${dayIndexes.length + 1}, auto)`,
+        }}
+      >
+        <div class="font-bold p-2 border">Wk</div>
+        {dayNames.map((dayName) => (
+          <div class="font-bold p-2 border">{dayName}</div>
+        ))}
+        {generateCalendar()}
       </div>
     </div>
   );
-}
+};
+
+export default CalendarComponent;

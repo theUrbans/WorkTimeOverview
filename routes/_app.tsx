@@ -1,4 +1,5 @@
 import { type PageProps } from "$fresh/server.ts";
+import type { ComponentChildren } from "preact";
 export default function App({ Component }: PageProps) {
   return (
     <html>
@@ -9,8 +10,24 @@ export default function App({ Component }: PageProps) {
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body>
-        <Component />
+        <Layout>
+          <Component />
+        </Layout>
       </body>
     </html>
+  );
+}
+
+type LayoutProps = {
+  children: ComponentChildren;
+};
+
+function Layout({ children }: LayoutProps) {
+  return (
+    <main class="h-screen w-screen box-border p-0 m-0">
+      <div class="h-full flex flex-col bg-slate-500">
+        {children}
+      </div>
+    </main>
   );
 }
