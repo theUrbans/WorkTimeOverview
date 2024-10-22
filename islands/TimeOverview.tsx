@@ -63,7 +63,7 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
     };
 
     sse.onerror = (event) => {
-      console.error("SSE error:", event);
+      console.error("SSE error");
       if ((event.target as EventSource).readyState === EventSource.CLOSED) {
         console.info("SSE connection closed");
       }
@@ -95,9 +95,12 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
   };
 
   function getEntry(date: Date) {
-    if (!$store.monthly?.value) return null;
-    const entry = Object.entries($store.monthly.value).find(([key]) => {
-      return key === date.toISOString();
+    if (!$store.monthly?.value) {
+      action.getMonthlyWorkTime();
+      return null;
+    }
+    const entry = Object.entries($store.monthly?.value ?? {}).find(([key]) => {
+      return key.split("T")[0] === date.toISOString().split("T")[0];
     })?.[1];
     return entry;
   }
