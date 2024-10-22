@@ -19,17 +19,12 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
   const [$store, action] = useData();
 
   useEffect(() => {
-    action.selectDate(new Date());
-    action.selectMode("month");
-    action.selectEmployee(employee);
+    action.selectEmployee(employee).then(() => {
+      action.selectDate(new Date());
+      action.selectMode("month");
+    });
     getNotificationPermission();
-    sendNotification(
-      "Welcome to the time tracking app!",
-      "You can now track your time.",
-    );
-  }, []);
 
-  useEffect(() => {
     const sse = new EventSource(`/worktime/api/${employee}/sse`);
 
     sse.onopen = () => {
@@ -81,10 +76,6 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
   }, []);
 
   useEffect(() => {
-    action.selectEmployee(employee);
-  }, [employee]);
-
-  useEffect(() => {
     if (!$store.employeeData) return;
     action.getDailyWorkTime();
     action.getWeeklyWorkTime();
@@ -120,7 +111,9 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
     return (
       <div
         class={`${
-          isInMonth ? isToday(date) ? "bg-accent" : "bg-secondary" : ""
+          isInMonth
+            ? isToday(date) ? "bg-primary text-secondary" : "bg-secondary"
+            : ""
         } ${
           isInMonth
             ? "flex flex-col justify-between gap-4 relative h-full rounded-xl p-4"
@@ -133,10 +126,10 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
         <div class="flex justify-between">
           <span
             class={`${
-              isInMonth
-                ? "font-bold bg-background py-1 px-2 rounded-md"
-                : "opacity-50"
-            }`}
+              isToday(date)
+                ? "bg-accent text-text "
+                : "bg-background text-primary "
+            }${isInMonth ? "font-bold py-1 px-2 rounded-md" : "opacity-50"}`}
           >
             {date.getDate()}
           </span>
@@ -150,17 +143,17 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
             )
             : <span>{entry?.time}</span>}
         </div>
-        <div>
+        <ol>
           {entry?.logs.map((log) => (
-            <div class="flex gap-2">
+            <li class="flex gap-2">
               <span>{log.in}</span>
               <span>-</span>
               <span>
                 {log.out}
               </span>
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     );
   };

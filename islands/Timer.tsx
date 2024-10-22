@@ -42,7 +42,7 @@ export default function Timer(props: TimerProps): JSX.Element {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [inProgess]);
+  }, [time]);
 
   return <span {...spanProps}>{time.value}</span>;
 }

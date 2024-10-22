@@ -153,7 +153,7 @@ const CalendarComponent: preact.FunctionalComponent<CalendarProps> = ({
       <div class="flex items-center justify-center gap-2 p-2">
         <button
           onClick={handlePrevMonth}
-          class="bg-secondary text-text px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
+          class="bg-secondary text-primary px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
         >
           {prevLabel}
         </button>
@@ -161,11 +161,11 @@ const CalendarComponent: preact.FunctionalComponent<CalendarProps> = ({
           type="month"
           value={formatDateForInput(currentDate)}
           onChange={handleDateChange}
-          class="bg-secondary text-text px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
+          class="bg-secondary text-primary px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
         />
         <button
           onClick={handleNextMonth}
-          class="bg-secondary text-text px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
+          class="bg-secondary text-primary px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
         >
           {nextLabel}
         </button>
