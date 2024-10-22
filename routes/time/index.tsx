@@ -6,7 +6,7 @@ export const handler: Handlers = {
     const id = form.get("id");
 
     const headers = new Headers();
-    headers.set("location", `/time/${id}`);
+    headers.set("location", `/worktime/time/${id}`);
     return new Response(null, {
       status: 302,
       headers,

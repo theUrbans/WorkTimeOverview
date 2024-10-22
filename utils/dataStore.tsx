@@ -48,7 +48,7 @@ const store: DataStore = {
 const actions = {
   async selectEmployee(id: number) {
     store.employeeId!.value = id;
-    const employeeData = await fetch(`/api/${id}/data`);
+    const employeeData = await fetch(`/worktime/api/${id}/data`);
     store.employeeData!.value = await employeeData.json();
   },
   selectMode: (mode: "day" | "week" | "month" | "year") => {
@@ -60,7 +60,7 @@ const actions = {
   async getDailyWorkTime() {
     const doy = dayOfYear(store.date?.value ?? new Date());
     const response = await fetch(
-      `/api/${store.employeeId!.value}/daily/${doy}`,
+      `/worktime/api/${store.employeeId!.value}/daily/${doy}`,
     );
     store.today!.value = await response.json();
   },
@@ -69,7 +69,7 @@ const actions = {
     const weeksReponse = await Promise.all(
       weeks.map((week) =>
         fetch(
-          `/api/${store.employeeId!.value}/weekly/${week}?whrs=${
+          `/worktime/api/${store.employeeId!.value}/weekly/${week}?whrs=${
             store.employeeData!.value.weekHours?.hours ?? "0"
           }`,
         )
@@ -86,7 +86,7 @@ const actions = {
   async getMonthlyWorkTime() {
     const month = (store.date?.value?.getMonth() ?? new Date().getMonth()) + 1;
     const response = await fetch(
-      `/api/${store.employeeId!.value}/monthly/${month}`,
+      `/worktime/api/${store.employeeId!.value}/monthly/${month}`,
     );
     store.monthly!.value = await response.json();
   },
