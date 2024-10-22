@@ -30,7 +30,7 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
   }, []);
 
   useEffect(() => {
-    const sse = new EventSource(`/api/${employee}/sse`);
+    const sse = new EventSource(`/worktime/api/${employee}/sse`);
 
     sse.onopen = () => {
       console.info("SSE connection opened");
