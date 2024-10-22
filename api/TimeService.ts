@@ -3,10 +3,6 @@ import type Database from "../database.ts";
 import { dailyWorkTimeFromWeekly } from "../utils/timeHelper.ts";
 import { dayOfYear } from "@std/datetime/day-of-year";
 
-interface ITimeService {
-  getDailyTime(): Promise<object[]>;
-}
-
 export type TodayResponse = {
   time: string;
   inProgress: boolean;
@@ -273,6 +269,7 @@ class TimeService {
     employeeId: number,
     date: Date,
   ): Promise<TimeDoneResponse> {
+    const year = date.getFullYear();
     const week = weekOfYear(date);
     const doy = dayOfYear(date);
 
@@ -285,17 +282,23 @@ class TimeService {
       ),
     ]);
 
+    const weeklyHoursNumber = parseInt(
+      weeklyHours.at(-1)?.value.split(";")[0] ?? "0",
+    );
+    const workingDaysNumber =
+      (workingDays.at(-1)?.value.split(";")[0] ?? "0").length;
+
     const dailyHours = dailyWorkTimeFromWeekly(
-      Number(weeklyHours[0].value),
-      Number(workingDays[0].value),
+      weeklyHoursNumber,
+      workingDaysNumber,
     );
 
     const [dailyTime, weeklyTime] = await Promise.all([
       this.db.query<TimeEntry>(
-        `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(DOY FROM log_date) = ${doy} order by id`,
+        `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(DOY FROM log_date) = ${doy} AND EXTRACT(YEAR FROM log_date) = ${year} order by id`,
       ),
       this.db.query<TimeEntry>(
-        `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = ${week} order by id`,
+        `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = ${week} AND EXTRACT(YEAR FROM log_date) = ${year} order by id`,
       ),
     ]);
 
@@ -313,15 +316,15 @@ class TimeService {
 
     return {
       daily: {
-        done: dailyTimeSum >= Number(dailyHours),
-        left: this.millisecondsToTime(Number(dailyHours) - dailyTimeSum),
+        done: dailyTimeSum >= this.timeToMilliseconds(dailyHours),
+        left: this.millisecondsToTime(
+          this.timeToMilliseconds(dailyHours) - dailyTimeSum,
+        ),
       },
       weekly: {
-        done: weeklyTimeSum >=
-          this.hoursToMilliseconds(Number(weeklyHours[0].value)),
+        done: weeklyTimeSum >= this.hoursToMilliseconds(weeklyHoursNumber),
         left: this.millisecondsToTime(
-          this.hoursToMilliseconds(Number(weeklyHours[0].value)) -
-            weeklyTimeSum,
+          this.hoursToMilliseconds(weeklyHoursNumber) - weeklyTimeSum,
         ),
       },
     };

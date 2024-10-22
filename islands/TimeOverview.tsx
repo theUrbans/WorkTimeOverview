@@ -1,5 +1,5 @@
 import { useEffect } from "preact/hooks";
-import { DataProvider, useData } from "../utils/dataStore.tsx";
+import { useData } from "../utils/dataStore.tsx";
 import CalendarComponent from "./Calendar.tsx";
 import Timer from "./Timer.tsx";
 import { signal } from "@preact/signals";
@@ -8,6 +8,7 @@ import {
   getNotificationPermission,
   sendNotification,
 } from "../utils/notification.ts";
+import type { TimeDoneResponse } from "../api/TimeService.ts";
 
 interface TimeOverviewProps {
   employee: number;
@@ -26,14 +27,56 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
       "Welcome to the time tracking app!",
       "You can now track your time.",
     );
+  }, []);
 
-    // connect with sse stream from /api/sse
+  useEffect(() => {
     const sse = new EventSource(`/api/${employee}/sse`);
+
     sse.onopen = () => {
-      console.log("SSE connection opened");
+      console.info("SSE connection opened");
     };
+
+    let counter = 0;
     sse.onmessage = (event) => {
-      console.log("SSE event", event.data);
+      if (event.data) {
+        try {
+          const { daily, weekly } = JSON.parse(event.data) as TimeDoneResponse;
+          if (weekly.done) {
+            sendNotification(
+              "Weekly time done!",
+              "Stop working and have a nice weekend!",
+            );
+            return;
+          }
+          if (daily.done) {
+            sendNotification(
+              "Daily time done!",
+              "Stop working and have a nice day!",
+            );
+            return;
+          }
+          if (++counter % 10 === 0) {
+            sendNotification(
+              "Just a few more",
+              `work for ${daily.left} today and ${weekly.left} this week!`,
+            );
+          }
+        } catch (error) {
+          console.error("SSE data error:", error);
+        }
+      }
+    };
+
+    sse.onerror = (event) => {
+      console.error("SSE error:", event);
+      if ((event.target as EventSource).readyState === EventSource.CLOSED) {
+        console.info("SSE connection closed");
+      }
+    };
+
+    return () => {
+      sse.close();
+      console.info("SSE connection closed");
     };
   }, []);
 
@@ -56,6 +99,10 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
     return date.toDateString() === new Date().toDateString();
   }
 
+  const isSameMonth = (date: Date) => {
+    return date.getMonth() === $store.date?.value.getMonth();
+  };
+
   function getEntry(date: Date) {
     if (!$store.monthly?.value) return null;
     const entry = Object.entries($store.monthly.value).find(([key]) => {
@@ -69,16 +116,30 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
     const time = signal(entry?.time ?? "00:00:00");
     const active = (entry?.logs ?? []).length > 0 &&
       entry?.logs?.some((log) => !log.out);
+    const isInMonth = isSameMonth(date);
     return (
       <div
-        class={"flex flex-col gap-4 relative px-2 h-full rounded-lg" +
-          ` ${isToday(date) ? "bg-blue-200" : "bg-slate-400"}`}
+        class={`${
+          isInMonth ? isToday(date) ? "bg-accent" : "bg-secondary" : ""
+        } ${
+          isInMonth
+            ? "flex flex-col justify-between gap-4 relative h-full rounded-xl p-4"
+            : "grid place-content-center border-2 border-solid border-secondary h-full rounded-xl"
+        }`}
       >
         {active && (
-          <div class="absolute top-0 right-0 w-2 h-2 animate-pulse rounded-full bg-red-600" />
+          <div class="absolute top-1 right-1 w-4 h-4 animate-pulse rounded-full bg-green-600" />
         )}
         <div class="flex justify-between">
-          <span class="font-bold">{date.getDate()}</span>
+          <span
+            class={`${
+              isInMonth
+                ? "font-bold bg-background py-1 px-2 rounded-md"
+                : "opacity-50"
+            }`}
+          >
+            {date.getDate()}
+          </span>
           {active
             ? (
               <Timer
@@ -109,7 +170,7 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
       week === weekNumber
     );
     return (
-      <div class="flex flex-col w-content">
+      <div class="flex flex-col justify-center items-center px-4">
         <span class="font-bold">
           {weekNumber}
         </span>
@@ -137,24 +198,38 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
   }
 
   return (
-    <DataProvider>
-      <div class="h-screen w-screen box-border p-0 m-0">
-        <div class="flex w-full p-2">
+    <div class="h-full w-full flex flex-col bg-background text-text">
+      <header class="flex w-full p-2 bg-secondary items-center justify-between">
+        <span>
           {$store.employeeData?.value.name}
-        </div>
-        <div class="h-full flex flex-col bg-zinc-600 box-border">
-          <CalendarComponent
-            startOfWeek={1}
-            daysToShow={[1, 2, 3, 4, 5]}
-            dayNames={["Mo", "Di", "Mi", "Do", "Fr"]}
-            renderDay={renderDay}
-            renderWeek={renderWeek}
-            onChange={handleDateChange}
-            onDayClick={handleDateChange}
-          />
-        </div>
+        </span>
+        <span>
+          <button
+            class="p-2 rounded-md bg-background text-text border-2 border-transparent border-solid hover:border-accent transition"
+            onClick={() => {
+              const root = document.documentElement;
+              root.classList.toggle("dark");
+            }}
+          >
+            Theme
+          </button>
+        </span>
+      </header>
+      <div class="h-full box-border">
+        <CalendarComponent
+          startOfWeek={1}
+          daysToShow={[1, 2, 3, 4, 5]}
+          dayNames={["Mo", "Di", "Mi", "Do", "Fr"]}
+          weekLabel=""
+          prevLabel="vorheriger Monat"
+          nextLabel="nächster Monat"
+          renderDay={renderDay}
+          renderWeek={renderWeek}
+          onChange={handleDateChange}
+          onDayClick={handleDateChange}
+        />
       </div>
-    </DataProvider>
+    </div>
   );
 };
 

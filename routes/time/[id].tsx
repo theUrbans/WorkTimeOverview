@@ -17,11 +17,7 @@ export const handler: Handlers<HandlerResponse> = {
 export default function TodayTime(props: PageProps<HandlerResponse>) {
   return (
     <DataProvider>
-      <div class="h-screen w-screen box-border p-0 m-0">
-        <div class="h-full flex flex-col bg-slate-500 box-border">
-          <TimeOveriew employee={props.data} />
-        </div>
-      </div>
+      <TimeOveriew employee={props.data} />
     </DataProvider>
   );
 }

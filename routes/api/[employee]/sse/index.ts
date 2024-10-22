@@ -1,6 +1,9 @@
 import type { FreshContext } from "$fresh/server.ts";
 import api from "../../../../api/index.ts";
 
+const INTERVAL_SECONDS = 60;
+const interval = INTERVAL_SECONDS * 1000;
+
 export const handler = (
   _req: Request,
   ctx: FreshContext,
@@ -15,7 +18,7 @@ export const handler = (
               Number(employee),
               new Date(),
             );
-            const data = `data: ${JSON.stringify({ time })}\n`;
+            const data = `data: ${JSON.stringify({ ...time })}\n\n`;
             const encoder = new TextEncoder();
             controller.enqueue(encoder.encode(data));
           } catch (error) {
@@ -23,16 +26,18 @@ export const handler = (
             controller.error(error);
             clearInterval(id);
           }
-        }, 10000);
+        }, interval);
 
-        controller.enqueue(new TextEncoder().encode("retry: 10000\n\n")); // Set retry interval to 10 seconds
+        controller.enqueue(
+          new TextEncoder().encode(`retry: ${INTERVAL_SECONDS} seconds\n\n`),
+        );
 
         return () => {
           clearInterval(id);
         };
       },
       cancel() {
-        console.log("Stream canceled");
+        console.info("Stream canceled");
       },
     });
 

@@ -4,6 +4,9 @@ interface CalendarProps {
   startOfWeek?: number; // 1 (Monday) to 7 (Sunday)
   daysToShow?: number[]; // Array of day numbers (1-7)
   dayNames?: string[]; // Custom names for the days
+  weekLabel?: string;
+  nextLabel?: string;
+  prevLabel?: string;
   renderDay?: (date: Date) => preact.JSX.Element;
   renderWeek?: (weekNumber: number) => preact.JSX.Element;
   onChange?: (date: Date) => void;
@@ -14,6 +17,9 @@ const CalendarComponent: preact.FunctionalComponent<CalendarProps> = ({
   startOfWeek = 7,
   daysToShow = [1, 2, 3, 4, 5, 6, 7],
   dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  weekLabel = "Wk",
+  nextLabel = "Next",
+  prevLabel = "Prev",
   renderDay,
   renderWeek,
   onChange,
@@ -125,9 +131,9 @@ const CalendarComponent: preact.FunctionalComponent<CalendarProps> = ({
 
     return weeks.map((week) => (
       <>
-        <div>
+        <>
           {renderWeek ? renderWeek(week.weekNumber) : week.weekNumber}
-        </div>
+        </>
         {week.dates.map((date) => (
           <div
             onClick={() => onDayClick?.(date)}
@@ -143,30 +149,38 @@ const CalendarComponent: preact.FunctionalComponent<CalendarProps> = ({
   };
 
   return (
-    <div class="calendar-component">
-      <div class="flex items-center justify-between mb-4">
-        <button onClick={handlePrevMonth} class="bg-gray-200 p-2 rounded">
-          Prev
+    <div class="calendar-component h-full w-full flex flex-col gap-2">
+      <div class="flex items-center justify-center gap-2 p-2">
+        <button
+          onClick={handlePrevMonth}
+          class="bg-secondary text-text px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
+        >
+          {prevLabel}
         </button>
         <input
           type="month"
           value={formatDateForInput(currentDate)}
           onChange={handleDateChange}
-          class="border p-2 rounded"
+          class="bg-secondary text-text px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
         />
-        <button onClick={handleNextMonth} class="bg-gray-200 p-2 rounded">
-          Next
+        <button
+          onClick={handleNextMonth}
+          class="bg-secondary text-text px-4 py-2 rounded-md border-2 border-transparent border-solid hover:border-accent"
+        >
+          {nextLabel}
         </button>
       </div>
       <div
-        class={`grid gap-2`}
+        class="grid gap-2 p-2 h-full box-border"
         style={{
-          gridTemplateColumns: `repeat(${dayIndexes.length + 1}, auto)`,
+          gridTemplateColumns: `max-content repeat(${dayIndexes.length}, auto)`,
+          gridTemplateRows: "4rem",
         }}
       >
-        <div class="font-bold p-2 border">Wk</div>
-        {dayNames.map((dayName) => (
-          <div class="font-bold p-2 border">{dayName}</div>
+        {[weekLabel, ...dayNames].map((label) => (
+          <span class="font-bold p-2 text-center h-content grid place-content-center">
+            {label}
+          </span>
         ))}
         {generateCalendar()}
       </div>

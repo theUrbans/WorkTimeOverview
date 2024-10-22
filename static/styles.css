@@ -5,5 +5,28 @@
 *,
 *::before,
 *::after {
- box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+body {
+  font-size: 16px;
+  transition: all 0.3s ease-in-out;
+  transition: color 0.3s ease-in-out;
+}
+
+@layer base {
+  :root {
+    --text: 0 0% 5%;
+    --background: 0 0% 94%;
+    --primary: 0 0% 5%;
+    --secondary: 0 0% 85%;
+    --accent: 0 100% 50%;
+  }
+  .dark {
+    --text: 0 0% 95%;
+    --background: 0 0% 6%;
+    --primary: 0 0% 95%;
+    --secondary: 0 0% 15%;
+    --accent: 0 100% 50%;
+  }
 }

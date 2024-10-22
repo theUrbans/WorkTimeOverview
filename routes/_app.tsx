@@ -24,10 +24,8 @@ type LayoutProps = {
 
 function Layout({ children }: LayoutProps) {
   return (
-    <main class="h-screen w-screen box-border p-0 m-0">
-      <div class="h-full flex flex-col bg-slate-500">
-        {children}
-      </div>
+    <main class="h-screen w-screen box-border p-0 m-0 bg-background text-text">
+      {children}
     </main>
   );
 }
