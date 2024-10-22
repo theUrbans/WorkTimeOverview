@@ -94,19 +94,26 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
     return date.getMonth() === $store.date?.value.getMonth();
   };
 
+  function setToMidnight(date: Date) {
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
   function getEntry(date: Date) {
     if (!$store.monthly?.value) {
       action.getMonthlyWorkTime();
       return null;
     }
     const entry = Object.entries($store.monthly?.value ?? {}).find(([key]) => {
-      return key.split("T")[0] === date.toISOString().split("T")[0];
+      return setToMidnight(new Date(key)).toISOString().split("T")[0] ===
+        setToMidnight(date).toISOString().split("T")[0];
     })?.[1];
     return entry;
   }
 
   const renderDay = (date: Date) => {
-    const entry = getEntry(date);
+    const normalizedDate = setToMidnight(date);
+    const entry = getEntry(normalizedDate);
     const time = signal(entry?.time ?? "00:00:00");
     const active = (entry?.logs ?? []).length > 0 &&
       entry?.logs?.some((log) => !log.out);
