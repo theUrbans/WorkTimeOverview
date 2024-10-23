@@ -7,6 +7,7 @@ import {
   dateToString,
   hoursToTimeString,
   isTimeOverThreshold,
+  newDate,
 } from "../utils/timeHelper.ts";
 import {
   getNotificationPermission,
@@ -28,6 +29,14 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
       action.selectMode("month");
     });
     getNotificationPermission();
+
+    setInterval(() => {
+      console.table({
+        raw: newDate(),
+        isoNew: newDate().toLocaleString(),
+        isoVanilla: new Date().toLocaleString(),
+      });
+    }, 5000);
 
     const sse = new EventSource(`/worktime/api/${employee}/sse`);
 

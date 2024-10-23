@@ -2,7 +2,6 @@ export type TimeString = `${number}:${number}:${number}`;
 
 export function newDate(): Date {
   const date = new Date();
-  date.setHours(0, 0, 0, 0);
   const offset = date.getTimezoneOffset();
   date.setTime(date.getTime() + offset * 60 * 1000);
   return date;
