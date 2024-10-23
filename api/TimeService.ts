@@ -152,13 +152,11 @@ class TimeService {
     const rows = await this.db.query<TimeEntry>(
       `SELECT * FROM timekeeping WHERE employee = ${employeeId} AND EXTRACT(WEEK FROM log_date) = ${week} AND EXTRACT(YEAR FROM log_date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
     );
-
     const weeklyTime = rows.reduce((acc, row) => {
       const timeIn = this.timeToDate(row.login);
       const timeOut = row.logout ? this.timeToDate(row.logout) : new Date();
       return acc + this.calculateTimeDifference(timeIn, timeOut);
     }, 0);
-
     return {
       time: this.millisecondsToTime(weeklyTime),
       timeDifference: this.millisecondsToTime(
