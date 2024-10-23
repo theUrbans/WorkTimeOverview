@@ -1,5 +1,13 @@
 export type TimeString = `${number}:${number}:${number}`;
 
+export function newDate(): Date {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  const offset = date.getTimezoneOffset();
+  date.setTime(date.getTime() + offset * 60 * 1000);
+  return date;
+}
+
 export function isTimeOverThreshold(time: string, threshold: string): boolean {
   if (time === "00:00:00" || threshold === "00:00:00") return false;
   const [hours, minutes, seconds] = time.split(":").map(Number);
@@ -46,4 +54,12 @@ export function dailyWorkTimeFromWeekly(
   const formattedSeconds = String(seconds).padStart(2, "0");
 
   return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+}
+
+export function dateToString(date: Date) {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+
+  return `${hours}:${minutes}:${seconds}`;
 }
