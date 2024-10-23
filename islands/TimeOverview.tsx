@@ -3,7 +3,11 @@ import { useData } from "../utils/dataStore.tsx";
 import CalendarComponent from "./Calendar.tsx";
 import Timer from "./Timer.tsx";
 import { signal } from "@preact/signals";
-import { hoursToTimeString, isTimeOverThreshold } from "../utils/timeHelper.ts";
+import {
+  dateToString,
+  hoursToTimeString,
+  isTimeOverThreshold,
+} from "../utils/timeHelper.ts";
 import {
   getNotificationPermission,
   sendNotification,
@@ -105,8 +109,10 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
       return null;
     }
     const entry = Object.entries($store.monthly?.value ?? {}).find(([key]) => {
-      return setToMidnight(new Date(key)).toISOString().split("T")[0] ===
-        setToMidnight(date).toISOString().split("T")[0];
+      return (
+        setToMidnight(new Date(key)).toISOString().split("T")[0] ===
+          setToMidnight(date).toISOString().split("T")[0]
+      );
     })?.[1];
     return entry;
   }
@@ -120,7 +126,7 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
     const isInMonth = isSameMonth(date);
     return (
       <div
-        class={`${
+        className={`${
           isInMonth
             ? isToday(date) ? "bg-primary text-secondary" : "bg-secondary"
             : ""
@@ -131,11 +137,11 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
         }`}
       >
         {active && (
-          <div class="absolute top-1 right-1 w-4 h-4 animate-pulse rounded-full bg-green-600" />
+          <div className="absolute top-1 right-1 w-4 h-4 animate-pulse rounded-full bg-green-600" />
         )}
-        <div class="flex justify-between">
+        <div className="flex justify-between">
           <span
-            class={`${
+            className={`${
               isToday(date)
                 ? "bg-accent text-text "
                 : "bg-background text-primary "
@@ -144,23 +150,15 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
             {date.getDate()}
           </span>
           {active
-            ? (
-              <Timer
-                time={time}
-                inProgess={true}
-              >
-              </Timer>
-            )
+            ? <Timer time={time} inProgess={true} />
             : <span>{entry?.time}</span>}
         </div>
         <ol>
           {entry?.logs.map((log) => (
-            <li class="flex gap-2">
+            <li className="flex gap-2">
               <span>{log.in}</span>
               <span>-</span>
-              <span>
-                {log.out}
-              </span>
+              <span>{log.out}</span>
             </li>
           ))}
         </ol>
@@ -169,20 +167,16 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
   };
 
   function renderWeek(weekNumber: number) {
-    const weekData = ($store.weekly?.value ?? []).find(({ week }) =>
-      week === weekNumber
+    const weekData = ($store.weekly?.value ?? []).find(
+      ({ week }) => week === weekNumber,
     );
     return (
-      <div class="flex flex-col justify-center items-center px-4">
-        <span class="font-bold">
-          {weekNumber}
-        </span>
-        <div class="flex flex-col gap-1">
-          <span>
-            {weekData?.time}
-          </span>
+      <div className="flex flex-col justify-center items-center px-4">
+        <span className="font-bold">{weekNumber}</span>
+        <div className="flex flex-col gap-1">
+          <span>{weekData?.time}</span>
           <span
-            class={`${
+            className={`${
               isTimeOverThreshold(
                   weekData?.time ?? "00:00:00",
                   hoursToTimeString(
@@ -200,15 +194,18 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
     );
   }
 
+  const clock = signal(dateToString(new Date()));
+
   return (
-    <div class="h-full w-full flex flex-col bg-background text-text">
-      <header class="flex w-full p-2 bg-secondary items-center justify-between">
+    <div className="h-full w-full flex flex-col bg-background text-text">
+      <header className="flex w-full p-2 bg-secondary items-center justify-between">
+        <span>{$store.employeeData?.value.name}</span>
         <span>
-          {$store.employeeData?.value.name}
+          <Timer time={clock} inProgess={true} />
         </span>
         <span>
           <button
-            class="p-2 rounded-md bg-background text-text border-2 border-transparent border-solid hover:border-accent transition"
+            className="p-2 rounded-md bg-background text-text border-2 border-transparent border-solid hover:border-accent transition"
             onClick={() => {
               const root = document.documentElement;
               root.classList.toggle("dark");
@@ -218,7 +215,7 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
           </button>
         </span>
       </header>
-      <div class="h-full box-border">
+      <div className="h-full box-border">
         <CalendarComponent
           startOfWeek={1}
           daysToShow={[1, 2, 3, 4, 5]}
