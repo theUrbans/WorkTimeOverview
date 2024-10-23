@@ -7,13 +7,13 @@ import {
   dateToString,
   hoursToTimeString,
   isTimeOverThreshold,
-  newDate,
 } from "../utils/timeHelper.ts";
 import {
   getNotificationPermission,
   sendNotification,
 } from "../utils/notification.ts";
 import type { TimeDoneResponse } from "../api/TimeService.ts";
+import { logger } from "../utils/logger.ts";
 
 interface TimeOverviewProps {
   employee: number;
@@ -30,18 +30,10 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
     });
     getNotificationPermission();
 
-    setInterval(() => {
-      console.table({
-        raw: newDate(),
-        isoNew: newDate().toLocaleString(),
-        isoVanilla: new Date().toLocaleString(),
-      });
-    }, 5000);
-
     const sse = new EventSource(`/worktime/api/${employee}/sse`);
 
     sse.onopen = () => {
-      console.info("SSE connection opened");
+      logger.info("SSE connection opened");
     };
 
     let counter = 0;
@@ -70,21 +62,21 @@ const TimeOverview: preact.FunctionalComponent<TimeOverviewProps> = (props) => {
             );
           }
         } catch (error) {
-          console.error("SSE data error:", error);
+          logger.error("SSE data error:", error);
         }
       }
     };
 
     sse.onerror = (event) => {
-      console.error("SSE error");
+      logger.error("SSE error");
       if ((event.target as EventSource).readyState === EventSource.CLOSED) {
-        console.info("SSE connection closed");
+        logger.info("SSE connection closed");
       }
     };
 
     return () => {
       sse.close();
-      console.info("SSE connection closed");
+      logger.info("SSE connection closed");
     };
   }, []);
 

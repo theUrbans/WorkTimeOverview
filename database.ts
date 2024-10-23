@@ -1,4 +1,5 @@
 import pg from "npm:pg";
+import { logger } from "./utils/logger.ts";
 
 class Database {
   private client;
@@ -22,9 +23,9 @@ class Database {
     });
 
     this.client.connect().then(() => {
-      console.info("Database connected");
+      logger.info("Database connected");
     }).catch((err: Error) => {
-      console.error(err);
+      logger.error(err);
     });
   }
 

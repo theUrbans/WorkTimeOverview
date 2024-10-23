@@ -1,5 +1,6 @@
 import { FreshContext } from "$fresh/server.ts";
 import Api from "../../../../api/index.ts";
+import { logger } from "../../../../utils/logger.ts";
 
 export const handler = async (_req: Request, ctx: FreshContext) => {
   try {
@@ -16,7 +17,7 @@ export const handler = async (_req: Request, ctx: FreshContext) => {
       },
     );
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     return new Response("Error", { status: 500 });
   }
 };

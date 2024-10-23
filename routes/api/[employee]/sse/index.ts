@@ -1,5 +1,6 @@
 import type { FreshContext } from "$fresh/server.ts";
 import api from "../../../../api/index.ts";
+import { logger } from "../../../../utils/logger.ts";
 
 const INTERVAL_SECONDS = 60;
 const interval = INTERVAL_SECONDS * 1000;
@@ -22,7 +23,7 @@ export const handler = (
             const encoder = new TextEncoder();
             controller.enqueue(encoder.encode(data));
           } catch (error) {
-            console.error("Error encoding data:", error);
+            logger.error("Error encoding data:", error);
             controller.error(error);
             clearInterval(id);
           }
@@ -37,7 +38,7 @@ export const handler = (
         };
       },
       cancel() {
-        console.info("Stream canceled");
+        logger.info("Stream canceled");
       },
     });
 
@@ -49,7 +50,7 @@ export const handler = (
       },
     });
   } catch (error) {
-    console.error("Error in handler:", error);
+    logger.error("Error in handler:", error);
     return new Response("Internal Server Error", { status: 500 });
   }
 };
